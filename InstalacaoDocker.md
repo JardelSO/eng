@@ -159,7 +159,3 @@ Isso confirma que o Docker está pronto para ser acessado remotamente pela porta
 
 ---
 
-### 10.6 Conclusão
-
-Agora, o daemon Docker está configurado para aceitar conexões remotas, permitindo o gerenciamento do Docker a partir de outras máquinas. Lembre-se de garantir a segurança do seu ambiente, configurando certificados SSL e outros mecanismos de autenticação para proteger o acesso remoto ao Docker.
-```
