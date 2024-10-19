@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/focal64"
+
+  # Configuração de disco
+  config.disksize.size = '40GB'
+
+  # Redirecionamento de portas
+  config.vm.network "forwarded_port", guest: 81, host: 81
+  config.vm.network "forwarded_port", guest: 80, host: 80
+  config.vm.network "forwarded_port", guest: 3306, host: 3306
+  config.vm.network "forwarded_port", guest: 8080, host: 8080
+  config.vm.network "forwarded_port", guest: 9000, host: 9000
+  config.vm.network "forwarded_port", guest: 19999, host: 19999
+  config.vm.network "forwarded_port", guest: 9001, host: 9001
+
+  # Rede
+  config.vm.network "private_network", ip: "192.168.33.88"
+
+  # Configuração de memória
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+  end
+
+  # Script para instalação
+  config.vm.provision "shell", inline: <<-SHELL
+    # Atualizar lista de pacotes
+    sudo apt-get update
+
+    # Instalar Apache
+    sudo apt-get install -y apache2
+
+    # Criar diretórios para os dois domínios
+    sudo mkdir -p /var/www/lab.com/public_html
+    sudo mkdir -p /var/www/motomoto.com/public_html
+
+    # Configurar permissões
+    sudo chown -R $USER:$USER /var/www/lab.com/public_html
+    sudo chown -R $USER:$USER /var/www/motomoto.com/public_html
+
+    # Copiar conteúdo para os dois domínios
+    sudo cp -r /vagrant/Forca/* /var/www/lab.com/public_html/
+    sudo cp -r /vagrant/freeway/* /var/www/motomoto.com/public_html/
+
+    # Criar Virtual Hosts para os dois domínios
+    sudo bash -c 'cat > /etc/apache2/sites-available/lab.com.conf <<EOF
+    <VirtualHost *:80>
+      ServerAdmin admin@lab.com
+      ServerName lab.com
+      ServerAlias www.lab.com
+      DocumentRoot /var/www/lab.com/public_html
+      ErrorLog ${APACHE_LOG_DIR}/boladoida_error.log
+      CustomLog ${APACHE_LOG_DIR}/boladoida_access.log combined
+    </VirtualHost>
+EOF'
+
+    sudo bash -c 'cat > /etc/apache2/sites-available/motomoto.com.conf <<EOF
+    <VirtualHost *:80>
+      ServerAdmin admin@motomoto.com
+      ServerName motomoto.com
+      ServerAlias www.motomoto.com
+      DocumentRoot /var/www/motomoto.com/public_html
+      ErrorLog ${APACHE_LOG_DIR}/cavalodoido_error.log
+      CustomLog ${APACHE_LOG_DIR}/cavalodoido_access.log combined
+    </VirtualHost>
+EOF'
+
+    # Habilitar os sites
+    sudo a2ensite lab.com.conf
+    sudo a2ensite motomoto.com.conf
+
+    # Desabilitar o site padrão
+    sudo a2dissite 000-default.conf
+
+    # Reiniciar Apache para aplicar as mudanças
+    sudo systemctl restart apache2
+  SHELL
+end
